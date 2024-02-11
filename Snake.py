@@ -1,107 +1,115 @@
 import pygame
-import time
 import random
+import datetime  
 
-# Inicjalizacja Pygame
+# Initialize Pygame
 pygame.init()
 
-# Ustawienia ekranu
-szerokosc = 800
-wysokosc = 600
-ekran = pygame.display.set_mode((szerokosc, wysokosc))
+# Screen settings
+width = 800
+height = 600
+screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Snake Game")
 
-# Kolory
-czarny = (0, 0, 0)
-bialy = (255, 255, 255)
-czerwony = (255, 0, 0)
-zielony = (0, 255, 0)
+# Colors
+black = (0, 0, 0)
+white = (255, 255, 255)
+red = (255, 0, 0)
+green = (0, 255, 0)
 
-# Rozmiar bloku i prędkość węża
-rozmiar_bloku = 20
-predkosc = 15
+# Block size and snake speed
+block_size = 20
+speed = 15
 
-# Czcionka i rozmiar tekstu
-czcionka = pygame.font.SysFont(None, 35)
+# Font and text size
+font = pygame.font.SysFont(None, 35)
 
-# Funkcja rysująca węża na ekranie
-def rysuj_weza(waz, rozmiar_bloku):
-    for segment in waz:
-        pygame.draw.rect(ekran, zielony, [segment[0], segment[1], rozmiar_bloku, rozmiar_bloku])
+# Function to draw the snake on the screen
+def draw_snake(snake, block_size):
+    for segment in snake:
+        pygame.draw.rect(screen, green, [segment[0], segment[1], block_size, block_size])
 
-# Funkcja rysująca punkt na ekranie
-def rysuj_punkt(punkt):
-    pygame.draw.rect(ekran, czerwony, [punkt[0], punkt[1], rozmiar_bloku, rozmiar_bloku])
+# Function to draw the point on the screen
+def draw_point(point):
+    pygame.draw.rect(screen, red, [point[0], point[1], block_size, block_size])
 
-# Funkcja obsługująca główną pętlę gry
-def gra():
-    gra_aktywna = True
-    koniec_gry = False
+# Function to handle the main game loop
+def game():
+    game_active = True
+    points = 0
 
-    # Inicjalizacja węża i punktu startowego
-    waz = [[szerokosc / 2, wysokosc / 2]]
-    kierunek = "RIGHT"
+    while game_active:
+        snake = [[width / 2, height / 2]]
+        direction = "RIGHT"
+        point = [random.randrange(1, (width // block_size)) * block_size,
+                 random.randrange(1, (height // block_size)) * block_size]
+        start_time = datetime.datetime.now()
+        game_over = False
 
-    punkt = [random.randrange(1, (szerokosc // rozmiar_bloku)) * rozmiar_bloku,
-             random.randrange(1, (wysokosc // rozmiar_bloku)) * rozmiar_bloku]
+        while not game_over:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT and direction != "RIGHT":
+                        direction = "LEFT"
+                    elif event.key == pygame.K_RIGHT and direction != "LEFT":
+                        direction = "RIGHT"
+                    elif event.key == pygame.K_UP and direction != "DOWN":
+                        direction = "UP"
+                    elif event.key == pygame.K_DOWN and direction != "UP":
+                        direction = "DOWN"
+                    elif event.key == pygame.K_ESCAPE:
+                        pygame.quit()
+                        quit()
 
-    while gra_aktywna and not koniec_gry:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                gra_aktywna = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT and kierunek != "RIGHT":
-                    kierunek = "LEFT"
-                elif event.key == pygame.K_RIGHT and kierunek != "LEFT":
-                    kierunek = "RIGHT"
-                elif event.key == pygame.K_UP and kierunek != "DOWN":
-                    kierunek = "UP"
-                elif event.key == pygame.K_DOWN and kierunek != "UP":
-                    kierunek = "DOWN"
+            new_head = [snake[0][0], snake[0][1]]
 
-        # Aktualizacja położenia węża
-        nowa_glowa = [waz[0][0], waz[0][1]]
+            if direction == "LEFT":
+                new_head[0] -= block_size
+            elif direction == "RIGHT":
+                new_head[0] += block_size
+            elif direction == "UP":
+                new_head[1] -= block_size
+            elif direction == "DOWN":
+                new_head[1] += block_size
 
-        if kierunek == "LEFT":
-            nowa_glowa[0] -= rozmiar_bloku
-        elif kierunek == "RIGHT":
-            nowa_glowa[0] += rozmiar_bloku
-        elif kierunek == "UP":
-            nowa_glowa[1] -= rozmiar_bloku
-        elif kierunek == "DOWN":
-            nowa_glowa[1] += rozmiar_bloku
+            new_head[0] = new_head[0] % width
+            new_head[1] = new_head[1] % height
 
-        # Przejście przez przeciwną stronę ekranu
-        nowa_glowa[0] = nowa_glowa[0] % szerokosc
-        nowa_glowa[1] = nowa_glowa[1] % wysokosc
+            snake.insert(0, new_head)
 
-        waz.insert(0, nowa_glowa)
+            if snake[0] == point:
+                point = [random.randrange(1, (width // block_size)) * block_size,
+                         random.randrange(1, (height // block_size)) * block_size]
+                points += 1
+            else:
+                snake.pop()
 
-        # Sprawdzenie kolizji z punktem
-        if waz[0] == punkt:
-            punkt = [random.randrange(1, (szerokosc // rozmiar_bloku)) * rozmiar_bloku,
-                     random.randrange(1, (wysokosc // rozmiar_bloku)) * rozmiar_bloku]
-        else:
-            # Jeśli wąż nie zjadł punktu, usuń ostatni segment, aby wydawało się, że wąż się porusza
-            waz.pop()
+            for segment in snake[1:]:
+                if snake[0] == segment:
+                    game_over = True
 
-        # Sprawdzenie kolizji z samym sobą
-        for segment in waz[1:]:
-            if waz[0] == segment:
-                koniec_gry = True
+            screen.fill(black)
+            draw_snake(snake, block_size)
+            draw_point(point)
 
-        # Aktualizacja ekranu
-        ekran.fill(czarny)
-        rysuj_weza(waz, rozmiar_bloku)
-        rysuj_punkt(punkt)
+            elapsed_time = datetime.datetime.now() - start_time
+            time_text = font.render("Time: " + str(elapsed_time.seconds), True, white)
+            screen.blit(time_text, (10, 10))
 
-        pygame.display.update()
+            points_text = font.render("Points: " + str(points), True, white)
+            screen.blit(points_text, (10, 50))
 
-        # Ustawienie prędkości gry
-        pygame.time.Clock().tick(predkosc)
+            pygame.display.update()
+            pygame.time.Clock().tick(speed)
 
+
+        points = 0
+        
     pygame.quit()
     quit()
 
-# Rozpoczęcie gry
-gra()
+# Start the game
+game()
